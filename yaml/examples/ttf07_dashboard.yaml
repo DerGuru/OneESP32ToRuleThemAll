@@ -1,0 +1,213 @@
+###############################################
+#                                             #
+#  Tecalor TTF07 – Lovelace Dashboard         #
+#  Copy this YAML into a HA dashboard view     #
+#                                             #
+###############################################
+
+title: Tecalor TTF07
+path: tecalor-ttf07
+type: sections
+sections:
+
+  ##################################
+  #  Status & Betriebsmodus        #
+  ##################################
+  - type: grid
+    title: Status
+    cards:
+      - type: entities
+        title: Betrieb
+        show_header_toggle: false
+        entities:
+          - entity: select.heizung_programmschalter
+            name: Programmschalter
+          - entity: binary_sensor.heizung_sommerbetrieb
+            name: Sommerbetrieb
+          - entity: sensor.heizung_fehlermeldung
+            name: Fehlermeldung
+          - entity: sensor.heizung_verdichter_starts
+            name: Verdichter Starts
+
+      - type: glance
+        title: Komponenten
+        show_state: true
+        entities:
+          - entity: binary_sensor.heizung_verdichter
+            name: Verdichter
+          - entity: binary_sensor.heizung_heizkreispumpe
+            name: HK-Pumpe
+          - entity: binary_sensor.heizung_warmwasserbereitung
+            name: WW
+          - entity: binary_sensor.heizung_kuehlbetrieb
+            name: Kühlen
+
+      - type: glance
+        title: Nachheizung
+        show_state: true
+        entities:
+          - entity: binary_sensor.heizung_nhz1
+            name: NHZ 1
+          - entity: binary_sensor.heizung_nhz2
+            name: NHZ 2
+          - entity: binary_sensor.heizung_nhz3
+            name: NHZ 3
+
+  ##################################
+  #  Temperaturen                  #
+  ##################################
+  - type: grid
+    title: Temperaturen
+    cards:
+      - type: gauge
+        entity: sensor.heizung_vorlaufisttemp
+        name: Vorlauf Ist
+        unit: °C
+        min: 15
+        max: 65
+        severity:
+          green: 20
+          yellow: 45
+          red: 55
+
+      - type: gauge
+        entity: sensor.heizung_ruecklaufisttemp
+        name: Rücklauf Ist
+        unit: °C
+        min: 15
+        max: 65
+        severity:
+          green: 20
+          yellow: 40
+          red: 50
+
+      - type: gauge
+        entity: sensor.heizung_speicheristtemp
+        name: Speicher Ist
+        unit: °C
+        min: 15
+        max: 70
+        severity:
+          green: 30
+          yellow: 50
+          red: 60
+
+      - type: gauge
+        entity: sensor.heizung_aussentemp
+        name: Außentemperatur
+        unit: °C
+        min: -20
+        max: 40
+        severity:
+          green: 10
+          yellow: 0
+          red: -10
+
+      - type: entities
+        title: Alle Temperaturen
+        show_header_toggle: false
+        entities:
+          - entity: sensor.heizung_vorlaufisttemp
+            name: Vorlauf Ist
+          - entity: sensor.heizung_vorlaufsolltemp
+            name: Vorlauf Soll
+          - entity: sensor.heizung_ruecklaufisttemp
+            name: Rücklauf Ist
+          - entity: sensor.heizung_speicheristtemp
+            name: Speicher Ist
+          - entity: sensor.heizung_aussentemp
+            name: Außentemperatur
+          - entity: sensor.heizung_raumisttemp
+            name: Raum Ist
+          - entity: sensor.heizung_verstellte_raumsolltemp
+            name: Raum Soll (verstellt)
+          - entity: sensor.heizung_heissgas_temp
+            name: Heißgas
+
+      - type: history-graph
+        title: Temperaturverlauf
+        hours_to_show: 24
+        entities:
+          - entity: sensor.heizung_vorlaufisttemp
+            name: Vorlauf
+          - entity: sensor.heizung_ruecklaufisttemp
+            name: Rücklauf
+          - entity: sensor.heizung_speicheristtemp
+            name: Speicher
+          - entity: sensor.heizung_aussentemp
+            name: Außen
+
+  ##################################
+  #  Drücke & Durchfluss           #
+  ##################################
+  - type: grid
+    title: Drücke & Durchfluss
+    cards:
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - entity: sensor.heizung_druck_hochdruck
+            name: Hochdruck
+          - entity: sensor.heizung_druck_niederdruck
+            name: Niederdruck
+          - entity: sensor.heizung_hdsensormax
+            name: HD Sensor Max
+          - entity: sensor.heizung_volumenstrom
+            name: Volumenstrom
+
+  ##################################
+  #  Warmwasser Einstellungen      #
+  ##################################
+  - type: grid
+    title: Warmwasser
+    cards:
+      - type: entities
+        title: Warmwasser Einstellungen
+        show_header_toggle: false
+        entities:
+          - entity: number.heizung_speichersolltemp
+            name: Speicher Soll
+          - entity: number.heizung_ww_komf_temp
+            name: WW Komfort
+          - entity: number.heizung_ww_eco_temp
+            name: WW Eco
+          - entity: number.heizung_ww_hysterese
+            name: WW Hysterese
+
+  ##################################
+  #  Heizkreis Einstellungen       #
+  ##################################
+  - type: grid
+    title: Heizkreis
+    cards:
+      - type: entities
+        title: Heizkreis Einstellungen
+        show_header_toggle: false
+        entities:
+          - entity: number.heizung_maxvorlauftemp
+            name: Max. Vorlauftemperatur
+          - entity: number.heizung_steigung_hk1
+            name: Heizkurve Steigung
+          - entity: number.heizung_raumeinfluss
+            name: Raumeinfluss
+          - entity: number.heizung_reglerdynamik
+            name: Reglerdynamik
+          - entity: sensor.heizung_verdichter_stillstand
+            name: Verdichter Stillstand
+          - entity: sensor.heizung_kuehlen_eingeschaltet
+            name: Kühlen eingeschaltet
+
+  ##################################
+  #  System                        #
+  ##################################
+  - type: grid
+    title: System
+    cards:
+      - type: entities
+        title: Geräteinformationen
+        show_header_toggle: false
+        entities:
+          - entity: sensor.heizung_raumfeuchte
+            name: Raumfeuchte
+          - entity: button.heizung_synchronize_time
+            name: Zeit synchronisieren

@@ -1,0 +1,440 @@
+#########################################
+#                                       #
+#   CrowPanel 5" Display Configuration  #
+#   800x480 RGB IPS, GT911 Touch        #
+#                                       #
+#########################################
+
+#########################################
+#   I2C Bus (Touch + external I2C)      #
+#########################################
+i2c:
+  sda: GPIO19
+  scl: GPIO20
+  scan: true
+
+#########################################
+#   Backlight (LEDC PWM on GPIO2)       #
+#########################################
+output:
+  - platform: ledc
+    pin: GPIO2
+    id: backlight_output
+
+light:
+  - platform: monochromatic
+    output: backlight_output
+    name: "Display Backlight"
+    id: display_backlight
+    restore_mode: ALWAYS_ON
+
+#########################################
+#   Touchscreen (GT911)                 #
+#########################################
+touchscreen:
+  - platform: gt911
+    id: crowpanel_touch
+    display: crowpanel_display
+    interrupt_pin: GPIO38
+    on_touch:
+      then:
+        - light.turn_on: display_backlight
+        - script.execute: backlight_timer
+
+#########################################
+#   Backlight Timer (15s after touch)   #
+#########################################
+script:
+  - id: backlight_timer
+    mode: restart
+    then:
+      - delay: 15s
+      - light.turn_off: display_backlight
+
+#########################################
+#   Fonts                               #
+#########################################
+font:
+  - file: "gfonts://Roboto"
+    id: font_title
+    size: 24
+    glyphs: ' !"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz°äöüÄÖÜß'
+  - file: "gfonts://Roboto"
+    id: font_label
+    size: 16
+    glyphs: ' !"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz°äöüÄÖÜß'
+  - file: "gfonts://Roboto"
+    id: font_value
+    size: 36
+    glyphs: ' !"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz°äöüÄÖÜß'
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 14
+    glyphs: ' !"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz°äöüÄÖÜß'
+  - file: "gfonts://Roboto"
+    id: font_status
+    size: 18
+    glyphs: ' !"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz°äöüÄÖÜß'
+
+#########################################
+#   Colors                              #
+#########################################
+color:
+  - id: color_bg
+    hex: "1a1a2e"
+  - id: color_card
+    hex: "16213e"
+  - id: color_title
+    hex: "e94560"
+  - id: color_white
+    hex: "ffffff"
+  - id: color_label
+    hex: "8892b0"
+  - id: color_value
+    hex: "ccd6f6"
+  - id: color_green
+    hex: "64ffda"
+  - id: color_red
+    hex: "ff6b6b"
+  - id: color_orange
+    hex: "ffa726"
+  - id: color_blue
+    hex: "42a5f5"
+
+#########################################
+#   Display (ESP32-S3 RGB Parallel)     #
+#########################################
+display:
+  - platform: rpi_dpi_rgb
+    id: crowpanel_display
+    auto_clear_enabled: false
+    color_order: BGR
+    dimensions:
+      width: 800
+      height: 480
+    de_pin: GPIO40
+    hsync_pin: GPIO39
+    vsync_pin: GPIO41
+    pclk_pin: GPIO0
+    pclk_frequency: 15MHz
+    pclk_inverted: true
+    hsync_front_porch: 8
+    hsync_pulse_width: 4
+    hsync_back_porch: 43
+    vsync_front_porch: 8
+    vsync_pulse_width: 4
+    vsync_back_porch: 12
+    data_pins:
+      red:
+        - GPIO45  # R0
+        - GPIO48  # R1
+        - GPIO47  # R2
+        - GPIO21  # R3
+        - GPIO14  # R4
+      green:
+        - GPIO5   # G0
+        - GPIO6   # G1
+        - GPIO7   # G2
+        - GPIO15  # G3
+        - GPIO16  # G4
+        - GPIO4   # G5
+      blue:
+        - GPIO8   # B0
+        - GPIO3   # B1
+        - GPIO46  # B2
+        - GPIO9   # B3
+        - GPIO1   # B4
+    update_interval: 5s
+    lambda: |-
+      // Layout constants
+      static const int gap = 14;
+      static const int y1 = 54, card_h = 110, card_w = 248;
+      static const int xp[3] = {gap, gap+card_w+gap, gap+2*(card_w+gap)};
+      static const int y2 = y1+card_h+gap;
+      static const int y3 = y2+card_h+gap;
+      static const int small_h = 80, sw = 380;
+      static const int sx[2] = {gap, gap+sw+gap};
+      static const int y4 = y3+small_h+gap;
+      static const int val_y_off = 30, val_h = 50, val_w = 224;
+      static const int sval_y_off = 26, sval_h = 34, sval_w = 224;
+      static const int dot_y = y4 + 14;
+      static const int line2_y = y4 + 44;
+
+      // Value cache (NAN = never drawn)
+      static float pv_t[6] = {NAN,NAN,NAN,NAN,NAN,NAN};
+      static float pv_s[1] = {NAN};
+      static float pv_wifi = NAN;
+      static float pv_bot[4] = {NAN,NAN,NAN,NAN};
+      static bool pv_b[8] = {false,false,false,false,false,false,false,false};
+      static bool pv_b_init = false;
+      static std::string pv_prog = "";
+      static bool needs_full_draw = true;
+
+      char buf[32];
+      float cur;
+
+      // ===== FIRST DRAW: static + initial values, then return =====
+      if (needs_full_draw) {
+        needs_full_draw = false;
+        it.fill(id(color_bg));
+
+        // Header
+        it.filled_rectangle(0, 0, 800, 44, id(color_card));
+        it.print(16, 10, id(font_title), id(color_title), "Tecalor TTF07");
+
+        // Row 1 cards + labels
+        for (int i = 0; i < 3; i++)
+          it.filled_rectangle(xp[i], y1, card_w, card_h, id(color_card));
+        it.print(xp[0]+12, y1+8, id(font_label), id(color_label), "Vorlauf");
+        it.print(xp[1]+12, y1+8, id(font_label), id(color_label), "Rücklauf");
+        it.print(xp[2]+12, y1+8, id(font_label), id(color_label), "Speicher");
+
+        // Row 2 cards + labels
+        for (int i = 0; i < 3; i++)
+          it.filled_rectangle(xp[i], y2, card_w, card_h, id(color_card));
+        it.print(xp[0]+12, y2+8, id(font_label), id(color_label), "Außen");
+        it.print(xp[1]+12, y2+8, id(font_label), id(color_label), "Raum");
+        it.print(xp[2]+12, y2+8, id(font_label), id(color_label), "Vorl. Soll");
+
+        // Row 3 cards + labels
+        for (int i = 0; i < 2; i++)
+          it.filled_rectangle(sx[i], y3, sw, small_h, id(color_card));
+        it.print(sx[0]+10, y3+6, id(font_small), id(color_label), "Raum Soll");
+        it.print(sx[1]+10, y3+6, id(font_small), id(color_label), "Nachheizung (NHZ)");
+
+        // Status bar background
+        it.filled_rectangle(0, y4, 800, 84, id(color_card));
+
+        // Draw initial values on fresh background (no clearing needed)
+        if (id(VORLAUFISTTEMP).has_state()) {
+          pv_t[0] = id(VORLAUFISTTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[0]);
+          it.print(xp[0]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+        if (id(RUECKLAUFISTTEMP).has_state()) {
+          pv_t[1] = id(RUECKLAUFISTTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[1]);
+          it.print(xp[1]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+        if (id(SPEICHERISTTEMP).has_state()) {
+          pv_t[2] = id(SPEICHERISTTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[2]);
+          it.print(xp[2]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+        if (id(AUSSENTEMP).has_state()) {
+          pv_t[3] = id(AUSSENTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[3]);
+          it.print(xp[0]+12, y2+32, id(font_value), id(color_value), buf);
+        }
+        if (id(RAUMISTTEMP).has_state()) {
+          pv_t[4] = id(RAUMISTTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[4]);
+          it.print(xp[1]+12, y2+32, id(font_value), id(color_value), buf);
+        }
+        if (id(VORLAUFSOLLTEMP).has_state()) {
+          pv_t[5] = id(VORLAUFSOLLTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_t[5]);
+          it.print(xp[2]+12, y2+32, id(font_value), id(color_blue), buf);
+        }
+        if (id(VERSTELLTE_RAUMSOLLTEMP).has_state()) {
+          pv_s[0] = id(VERSTELLTE_RAUMSOLLTEMP).state;
+          snprintf(buf, sizeof(buf), "%.1f°C", pv_s[0]);
+          it.print(sx[0]+10, y3+28, id(font_value), id(color_value), buf);
+        }
+        // NHZ status dots in card
+        pv_b[5] = id(NHZ1).state; pv_b[6] = id(NHZ2).state; pv_b[7] = id(NHZ3).state;
+        auto cn1 = pv_b[5] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+20, y3+40, 6, cn1); it.print(sx[1]+30, y3+32, id(font_status), cn1, "Stufe 1");
+        auto cn2 = pv_b[6] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+150, y3+40, 6, cn2); it.print(sx[1]+160, y3+32, id(font_status), cn2, "Stufe 2");
+        auto cn3 = pv_b[7] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+280, y3+40, 6, cn3); it.print(sx[1]+290, y3+32, id(font_status), cn3, "Stufe 3");
+        if (id(wifi_signal_pct).has_state()) {
+          pv_wifi = id(wifi_signal_pct).state;
+          snprintf(buf, sizeof(buf), "WiFi %.0f%%", pv_wifi);
+          it.print(680, 14, id(font_small), id(color_label), buf);
+        }
+        pv_b[0] = id(VERDICHTER).state; pv_b[1] = id(WARMWASSERBEREITUNG).state;
+        pv_b[2] = id(KUEHLBETRIEB).state;
+        pv_b[3] = id(SOMMERBETRIEB).state; pv_b_init = true;
+        pv_b[5] = id(NHZ1).state; pv_b[6] = id(NHZ2).state; pv_b[7] = id(NHZ3).state;
+        auto c1 = pv_b[0] ? id(color_green) : id(color_label);
+        it.filled_circle(gap+6, dot_y+6, 6, c1); it.print(gap+16, dot_y-2, id(font_small), c1, "Verdichter");
+        auto c2 = pv_b[1] ? id(color_green) : id(color_label);
+        it.filled_circle(166, dot_y+6, 6, c2); it.print(176, dot_y-2, id(font_small), c2, "Warmwasser");
+        auto c3 = pv_b[2] ? id(color_blue) : id(color_label);
+        it.filled_circle(326, dot_y+6, 6, c3); it.print(336, dot_y-2, id(font_small), c3, "Kühlen");
+        auto c4 = pv_b[3] ? id(color_orange) : id(color_label);
+        it.filled_circle(436, dot_y+6, 6, c4); it.print(446, dot_y-2, id(font_small), c4, "Sommer");
+        if (id(PROGRAMMSCHALTER).has_state()) {
+          pv_prog = id(PROGRAMMSCHALTER).state;
+          it.printf(680, dot_y-2, id(font_status), id(color_white), "%s", pv_prog.c_str());
+        }
+        if (id(SPEICHERSOLLTEMP).has_state()) {
+          pv_bot[0] = id(SPEICHERSOLLTEMP).state;
+          snprintf(buf, sizeof(buf), "Speicher Soll: %.1f°C", pv_bot[0]);
+          it.print(gap, line2_y, id(font_small), id(color_label), buf);
+        }
+        if (id(WW_KOMF_TEMP).has_state()) {
+          pv_bot[1] = id(WW_KOMF_TEMP).state;
+          snprintf(buf, sizeof(buf), "WW Komfort: %.1f°C", pv_bot[1]);
+          it.print(250, line2_y, id(font_small), id(color_label), buf);
+        }
+        if (id(WW_ECO_TEMP).has_state()) {
+          pv_bot[2] = id(WW_ECO_TEMP).state;
+          snprintf(buf, sizeof(buf), "WW Eco: %.1f°C", pv_bot[2]);
+          it.print(470, line2_y, id(font_small), id(color_label), buf);
+        }
+        return;
+      }
+
+      // ===== SUBSEQUENT: only redraw values that actually changed =====
+      if (id(VORLAUFISTTEMP).has_state()) {
+        cur = id(VORLAUFISTTEMP).state;
+        if (isnan(pv_t[0]) || (int)(cur*10) != (int)(pv_t[0]*10)) {
+          pv_t[0] = cur;
+          it.filled_rectangle(xp[0]+12, y1+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[0]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+      }
+      if (id(RUECKLAUFISTTEMP).has_state()) {
+        cur = id(RUECKLAUFISTTEMP).state;
+        if (isnan(pv_t[1]) || (int)(cur*10) != (int)(pv_t[1]*10)) {
+          pv_t[1] = cur;
+          it.filled_rectangle(xp[1]+12, y1+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[1]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+      }
+      if (id(SPEICHERISTTEMP).has_state()) {
+        cur = id(SPEICHERISTTEMP).state;
+        if (isnan(pv_t[2]) || (int)(cur*10) != (int)(pv_t[2]*10)) {
+          pv_t[2] = cur;
+          it.filled_rectangle(xp[2]+12, y1+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[2]+12, y1+32, id(font_value), id(color_value), buf);
+        }
+      }
+      if (id(AUSSENTEMP).has_state()) {
+        cur = id(AUSSENTEMP).state;
+        if (isnan(pv_t[3]) || (int)(cur*10) != (int)(pv_t[3]*10)) {
+          pv_t[3] = cur;
+          it.filled_rectangle(xp[0]+12, y2+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[0]+12, y2+32, id(font_value), id(color_value), buf);
+        }
+      }
+      if (id(RAUMISTTEMP).has_state()) {
+        cur = id(RAUMISTTEMP).state;
+        if (isnan(pv_t[4]) || (int)(cur*10) != (int)(pv_t[4]*10)) {
+          pv_t[4] = cur;
+          it.filled_rectangle(xp[1]+12, y2+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[1]+12, y2+32, id(font_value), id(color_value), buf);
+        }
+      }
+      if (id(VORLAUFSOLLTEMP).has_state()) {
+        cur = id(VORLAUFSOLLTEMP).state;
+        if (isnan(pv_t[5]) || (int)(cur*10) != (int)(pv_t[5]*10)) {
+          pv_t[5] = cur;
+          it.filled_rectangle(xp[2]+12, y2+val_y_off, val_w, val_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(xp[2]+12, y2+32, id(font_value), id(color_blue), buf);
+        }
+      }
+      // Raum Soll
+      if (id(VERSTELLTE_RAUMSOLLTEMP).has_state()) {
+        cur = id(VERSTELLTE_RAUMSOLLTEMP).state;
+        if (isnan(pv_s[0]) || (int)(cur*10) != (int)(pv_s[0]*10)) {
+          pv_s[0] = cur;
+          it.filled_rectangle(sx[0]+10, y3+sval_y_off, sval_w, sval_h, id(color_card));
+          snprintf(buf, sizeof(buf), "%.1f°C", cur);
+          it.print(sx[0]+10, y3+28, id(font_value), id(color_value), buf);
+        }
+      }
+      // NHZ dots
+      bool nhz[3] = {id(NHZ1).state, id(NHZ2).state, id(NHZ3).state};
+      if (nhz[0] != pv_b[5] || nhz[1] != pv_b[6] || nhz[2] != pv_b[7]) {
+        pv_b[5] = nhz[0]; pv_b[6] = nhz[1]; pv_b[7] = nhz[2];
+        it.filled_rectangle(sx[1]+10, y3+sval_y_off, 360, sval_h, id(color_card));
+        auto cn1 = pv_b[5] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+20, y3+40, 6, cn1); it.print(sx[1]+30, y3+32, id(font_status), cn1, "Stufe 1");
+        auto cn2 = pv_b[6] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+150, y3+40, 6, cn2); it.print(sx[1]+160, y3+32, id(font_status), cn2, "Stufe 2");
+        auto cn3 = pv_b[7] ? id(color_red) : id(color_label);
+        it.filled_circle(sx[1]+280, y3+40, 6, cn3); it.print(sx[1]+290, y3+32, id(font_status), cn3, "Stufe 3");
+      }
+      if (id(wifi_signal_pct).has_state()) {
+        cur = id(wifi_signal_pct).state;
+        if (isnan(pv_wifi) || (int)cur != (int)pv_wifi) {
+          pv_wifi = cur;
+          it.filled_rectangle(670, 4, 126, 36, id(color_card));
+          snprintf(buf, sizeof(buf), "WiFi %.0f%%", cur);
+          it.print(680, 14, id(font_small), id(color_label), buf);
+        }
+      }
+      bool cb[4] = {id(VERDICHTER).state, id(WARMWASSERBEREITUNG).state,
+                    id(KUEHLBETRIEB).state, id(SOMMERBETRIEB).state};
+      bool bools_changed = !pv_b_init;
+      for (int i = 0; i < 4; i++) { if (cb[i] != pv_b[i]) bools_changed = true; }
+      // NHZ changes are handled separately above
+      if (bools_changed) {
+        for (int i = 0; i < 4; i++) pv_b[i] = cb[i];
+        pv_b_init = true;
+        it.filled_rectangle(0, y4+6, 670, 28, id(color_card));
+        auto c1 = pv_b[0] ? id(color_green) : id(color_label);
+        it.filled_circle(gap+6, dot_y+6, 6, c1); it.print(gap+16, dot_y-2, id(font_small), c1, "Verdichter");
+        auto c2 = pv_b[1] ? id(color_green) : id(color_label);
+        it.filled_circle(166, dot_y+6, 6, c2); it.print(176, dot_y-2, id(font_small), c2, "Warmwasser");
+        auto c3 = pv_b[2] ? id(color_blue) : id(color_label);
+        it.filled_circle(326, dot_y+6, 6, c3); it.print(336, dot_y-2, id(font_small), c3, "Kühlen");
+        auto c4 = pv_b[3] ? id(color_orange) : id(color_label);
+        it.filled_circle(436, dot_y+6, 6, c4); it.print(446, dot_y-2, id(font_small), c4, "Sommer");
+      }
+      if (id(PROGRAMMSCHALTER).has_state()) {
+        std::string cp = id(PROGRAMMSCHALTER).state;
+        if (cp != pv_prog) {
+          pv_prog = cp;
+          it.filled_rectangle(670, y4+6, 130, 28, id(color_card));
+          it.printf(680, dot_y-2, id(font_status), id(color_white), "%s", cp.c_str());
+        }
+      }
+      if (id(SPEICHERSOLLTEMP).has_state()) {
+        cur = id(SPEICHERSOLLTEMP).state;
+        if (isnan(pv_bot[0]) || (int)(cur*10) != (int)(pv_bot[0]*10)) {
+          pv_bot[0] = cur;
+          it.filled_rectangle(gap, line2_y-2, 220, 24, id(color_card));
+          snprintf(buf, sizeof(buf), "Speicher Soll: %.1f°C", cur);
+          it.print(gap, line2_y, id(font_small), id(color_label), buf);
+        }
+      }
+      if (id(WW_KOMF_TEMP).has_state()) {
+        cur = id(WW_KOMF_TEMP).state;
+        if (isnan(pv_bot[1]) || (int)(cur*10) != (int)(pv_bot[1]*10)) {
+          pv_bot[1] = cur;
+          it.filled_rectangle(250, line2_y-2, 200, 24, id(color_card));
+          snprintf(buf, sizeof(buf), "WW Komfort: %.1f°C", cur);
+          it.print(250, line2_y, id(font_small), id(color_label), buf);
+        }
+      }
+      if (id(WW_ECO_TEMP).has_state()) {
+        cur = id(WW_ECO_TEMP).state;
+        if (isnan(pv_bot[2]) || (int)(cur*10) != (int)(pv_bot[2]*10)) {
+          pv_bot[2] = cur;
+          it.filled_rectangle(470, line2_y-2, 160, 24, id(color_card));
+          snprintf(buf, sizeof(buf), "WW Eco: %.1f°C", cur);
+          it.print(470, line2_y, id(font_small), id(color_label), buf);
+        }
+      }
+
+#########################################
+#   WiFi Signal Sensor for Display      #
+#########################################
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_pct
+    update_interval: 60s
+    filters:
+      - lambda: return min(max(2.0 * (x + 100.0), 0.0), 100.0);

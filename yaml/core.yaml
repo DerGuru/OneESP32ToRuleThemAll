@@ -1,20 +1,15 @@
-#########################################
-#                                       #
-#   ESPHome                             #
-#                                       #
-#########################################
 esphome:
   includes:
-    - OneESP32ToRuleThemAll/src/callback_handler.h
-    - OneESP32ToRuleThemAll/src/communication.h
-    - OneESP32ToRuleThemAll/src/mapper.h
-    - OneESP32ToRuleThemAll/src/mapper.cpp
-    - OneESP32ToRuleThemAll/src/property.h
-    - OneESP32ToRuleThemAll/src/property.cpp
-    - OneESP32ToRuleThemAll/src/simple_variant.h
-    - OneESP32ToRuleThemAll/src/type.h
-    - OneESP32ToRuleThemAll/src/type.cpp
-    - OneESP32ToRuleThemAll/src/util.h
+    - src/callback_handler.h
+    - src/communication.h
+    - src/mapper.h
+    - src/mapper.cpp
+    - src/property.h
+    - src/property.cpp
+    - src/simple_variant.h
+    - src/type.h
+    - src/type.cpp
+    - src/util.h
   platformio_options:
     build_flags:
       - "-std=gnu++2a"
@@ -27,16 +22,6 @@ esphome:
       - "-std=gnu++11"
       - "-fno-rtti"
 
-esp32:
-  framework:
-    advanced:
-      loop_task_stack_size: 16384
-
-#########################################
-#                                       #
-#   Substitutions                       #
-#                                       #
-#########################################
 substitutions:
   interval_very_fast: 15s
   interval_fast: 30s
@@ -113,6 +98,18 @@ interval:
 
 #########################################
 #                                       #
+#   CAN Sniffer                         #
+#                                       #
+#########################################
+text_sensor:
+  - platform: template
+    name: "CAN Bus Sniffer"
+    id: can_sniffer
+    icon: "mdi:bus-electric"
+    entity_category: diagnostic
+
+#########################################
+#                                       #
 #   CANbus configuration                #
 #                                       #
 #########################################
@@ -125,6 +122,14 @@ canbus:
       can_id_mask: 0
       then:
         - lambda: |-
+            // Raw CAN sniffer: format as "CAN_ID#HEX_DATA" and publish to HA
+            char buf[32];
+            int pos = snprintf(buf, sizeof(buf), "%03lX#", can_id);
+            for (size_t i = 0; i < x.size() && pos < (int)sizeof(buf) - 2; i++) {
+              pos += snprintf(buf + pos, sizeof(buf) - pos, "%02X", x[i]);
+            }
+            id(can_sniffer).publish_state(buf);
+
             ESP_LOGD("CAN", "Can message received with CANId 0x%04lx", can_id);
             const auto [property, value] = processCanMessage(x);
             const auto canMember = getCanMemberByCanId(can_id);
@@ -172,16 +177,3 @@ api:
             } else {
               ESP_LOGI("ACTION","No CanMember with name %s defined!", target.c_str());
             }
-
-#########################################
-#                                       #
-#   Scripts                             #
-#                                       #
-#########################################
-script:
-  - id: mqtt_push_event
-    mode: queued
-    parameters:
-      suffix: string
-      payload: string
-    then:

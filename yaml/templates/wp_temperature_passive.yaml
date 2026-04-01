@@ -1,24 +1,17 @@
 defaults:
-  icon: "mdi:blank"
-  accuracy_decimals: "0"
   target: "Kessel"
-  update_interval: "never"
-  unit: ""
-  scaler: "1.0"
   name_suffix: ""
+  unit: "°C"
 
 sensor:
   - platform: template
     name: ${property}${name_suffix}
     id: ${property}${name_suffix}
-    icon: ${icon}
     unit_of_measurement: ${unit}
-    accuracy_decimals: ${accuracy_decimals}
-    update_interval: ${update_interval}
+    icon: "mdi:thermometer-lines"
+    device_class: "temperature"
     state_class: "measurement"
-    lambda: |-
-        queueRequest(${target}, Property::k${property});
-        return {};
+    accuracy_decimals: 1
 
 esphome:
   on_boot:
@@ -26,6 +19,5 @@ esphome:
     then:
       - lambda: |-
           CallbackHandler::instance().addCallback(std::make_pair(${target},Property::k${property}),[](const SimpleVariant& value){
-              id(${property}${name_suffix}).publish_state(${scaler} * value.get<float>());
+              id(${property}${name_suffix}).publish_state(value);
           });
-          queueRequest(${target}, Property::k${property});

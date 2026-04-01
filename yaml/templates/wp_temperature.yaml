@@ -4,7 +4,6 @@ defaults:
   writable: "false"
   name_suffix: ""
   unit: "°C"
-  exposed: "true"
 
 sensor:
   - platform: template
@@ -26,20 +25,10 @@ esphome:
     then:
       - lambda: |-
           auto callback= [](const SimpleVariant& value){
-              const auto newValue{value.get<float>()};
-              auto property{id(${property}${name_suffix})};
-              if(!std::is_eq(property->state <=> newValue)) {
-                property->publish_state(newValue);
-              }
+              id(${property}${name_suffix}).publish_state(value);
           };
           CallbackHandler::instance().addCallback(std::make_pair(${target},Property::k${property}),callback);
           if constexpr(${writable}) {
             CallbackHandler::instance().addCallback(std::make_pair(Manager,Property::k${property}),callback);
           }
           queueRequest(${target}, Property::k${property});
-
-          #if defined(ANALYTICS)
-            if(${exposed}) {
-              getWhitelistedEntities().insert(id(${property}${name_suffix}));
-            }
-          #endif
