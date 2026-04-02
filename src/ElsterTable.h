@@ -145,7 +145,7 @@ static const ElsterIndex ElsterTable[] =
   // Kuehlkreispumpe:     0x0800
   { "KESSELSOLLTEMP", 0x0002, et_dec_val, "Kessel Soll Temperatur", "sensor", "temperature", "°C", "measurement", "mdi:thermometer", NULL, NULL, false, true },
   { "SPEICHERSOLLTEMP", 0x0003, et_dec_val, "Speicher Soll Temperatur", "sensor", "temperature", "°C", "measurement", "mdi:thermometer", NULL, NULL, false, true },
-  { "VORLAUFSOLLTEMP", 0x0004, et_dec_val, "Vorlauf Soll Temperatur", NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, false },
+  { "RUECKLAUFSOLLTEMP", 0x0004, et_dec_val, "Rücklauf Soll Temperatur", NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, false },
   { "RAUMSOLLTEMP_I", 0x0005, et_dec_val, "Raum Soll Temperatur I", "sensor", "temperature", "°C", "measurement", "mdi:home-thermometer", NULL, NULL, false, true },
   { "RAUMSOLLTEMP_II", 0x0006, et_dec_val, "Raum Soll Temperatur II", "sensor", "temperature", "°C", "measurement", "mdi:home-thermometer", NULL, NULL, false, true },
   { "RAUMSOLLTEMP_III", 0x0007, et_dec_val, "Raum Soll Temperatur III", "sensor", "temperature", "°C", "measurement", "mdi:home-thermometer", NULL, NULL, false, true },

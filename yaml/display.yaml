@@ -194,7 +194,7 @@ display:
           it.filled_rectangle(xp[i], y2, card_w, card_h, id(color_card));
         it.print(xp[0]+12, y2+8, id(font_label), id(color_label), "Außen");
         it.print(xp[1]+12, y2+8, id(font_label), id(color_label), "Raum");
-        it.print(xp[2]+12, y2+8, id(font_label), id(color_label), "Vorl. Soll");
+        it.print(xp[2]+12, y2+8, id(font_label), id(color_label), "Rückl. Soll");
 
         // Row 3 cards + labels
         for (int i = 0; i < 2; i++)
@@ -231,8 +231,8 @@ display:
           snprintf(buf, sizeof(buf), "%.1f°C", pv_t[4]);
           it.print(xp[1]+12, y2+32, id(font_value), id(color_value), buf);
         }
-        if (id(VORLAUFSOLLTEMP).has_state()) {
-          pv_t[5] = id(VORLAUFSOLLTEMP).state;
+        if (id(RUECKLAUFSOLLTEMP).has_state()) {
+          pv_t[5] = id(RUECKLAUFSOLLTEMP).state;
           snprintf(buf, sizeof(buf), "%.1f°C", pv_t[5]);
           it.print(xp[2]+12, y2+32, id(font_value), id(color_blue), buf);
         }
@@ -334,8 +334,8 @@ display:
           it.print(xp[1]+12, y2+32, id(font_value), id(color_value), buf);
         }
       }
-      if (id(VORLAUFSOLLTEMP).has_state()) {
-        cur = id(VORLAUFSOLLTEMP).state;
+      if (id(RUECKLAUFSOLLTEMP).has_state()) {
+        cur = id(RUECKLAUFSOLLTEMP).state;
         if (isnan(pv_t[5]) || (int)(cur*10) != (int)(pv_t[5]*10)) {
           pv_t[5] = cur;
           it.filled_rectangle(xp[2]+12, y2+val_y_off, val_w, val_h, id(color_card));

@@ -109,8 +109,8 @@ sections:
         entities:
           - entity: sensor.heizung_vorlaufisttemp
             name: Vorlauf Ist
-          - entity: sensor.heizung_vorlaufsolltemp
-            name: Vorlauf Soll
+          - entity: sensor.heizung_ruecklaufsolltemp
+            name: Rücklauf Soll
           - entity: sensor.heizung_ruecklaufisttemp
             name: Rücklauf Ist
           - entity: sensor.heizung_speicheristtemp

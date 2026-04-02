@@ -63,7 +63,7 @@ struct Property : public oe32trta::detail::Property {
     PROPERTY(INDEX_NOT_FOUND, 0x0000);
     PROPERTY(FEHLERMELDUNG, 0x0001);
     PROPERTY(SPEICHERSOLLTEMP, 0x0003, Type::et_dec_val);
-    PROPERTY(VORLAUFSOLLTEMP, 0x0004, Type::et_dec_val);
+    PROPERTY(RUECKLAUFSOLLTEMP, 0x0004, Type::et_dec_val);
     PROPERTY(AUSSENTEMP, 0x000c, Type::et_dec_val);
     PROPERTY(SPEICHERISTTEMP, 0x000e, Type::et_dec_val);
     PROPERTY(VERSTELLTE_RAUMSOLLTEMP, 0x0012, Type::et_dec_val);

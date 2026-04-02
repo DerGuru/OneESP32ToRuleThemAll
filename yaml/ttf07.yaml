@@ -56,11 +56,12 @@ esphome:
           });
           queueRequest(Kessel, Property::kSPEICHERSOLLTEMP);
 
-          // STEIGUNG_HK1: listen on HK1 + Manager (no boot poll to avoid active HK1 polling)
+          // STEIGUNG_HK1: listen on HK1 + Manager
           CallbackHandler::instance().addCallbacks({std::make_pair(HK1,Property::kSTEIGUNG_HK1),
                                                     std::make_pair(Manager,Property::kSTEIGUNG_HK1)},[](const SimpleVariant& value){
             id(STEIGUNG_HK1).publish_state(value);
           });
+          queueRequest(HK1, Property::kSTEIGUNG_HK1);
 
 #########################################
 #                                       #
