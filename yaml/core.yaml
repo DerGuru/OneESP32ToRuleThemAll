@@ -98,15 +98,15 @@ interval:
 
 #########################################
 #                                       #
-#   CAN Sniffer                         #
+#   CAN Sniffer (DISABLED)              #
 #                                       #
 #########################################
-text_sensor:
-  - platform: template
-    name: "CAN Bus Sniffer"
-    id: can_sniffer
-    icon: "mdi:bus-electric"
-    entity_category: diagnostic
+#text_sensor:
+#  - platform: template
+#    name: "CAN Bus Sniffer"
+#    id: can_sniffer
+#    icon: "mdi:bus-electric"
+#    entity_category: diagnostic
 
 #########################################
 #                                       #
@@ -122,13 +122,13 @@ canbus:
       can_id_mask: 0
       then:
         - lambda: |-
-            // Raw CAN sniffer: format as "CAN_ID#HEX_DATA" and publish to HA
-            char buf[32];
-            int pos = snprintf(buf, sizeof(buf), "%03lX#", can_id);
-            for (size_t i = 0; i < x.size() && pos < (int)sizeof(buf) - 2; i++) {
-              pos += snprintf(buf + pos, sizeof(buf) - pos, "%02X", x[i]);
-            }
-            id(can_sniffer).publish_state(buf);
+            // Raw CAN sniffer DISABLED
+            // char buf[32];
+            // int pos = snprintf(buf, sizeof(buf), "%03lX#", can_id);
+            // for (size_t i = 0; i < x.size() && pos < (int)sizeof(buf) - 2; i++) {
+            //   pos += snprintf(buf + pos, sizeof(buf) - pos, "%02X", x[i]);
+            // }
+            // id(can_sniffer).publish_state(buf);
 
             ESP_LOGD("CAN", "Can message received with CANId 0x%04lx", can_id);
             const auto [property, value] = processCanMessage(x);
